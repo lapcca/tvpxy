@@ -1,4 +1,4 @@
-module proxy
+module github.com/lapcca/TVPxy/proxy
 
 go 1.21
 
