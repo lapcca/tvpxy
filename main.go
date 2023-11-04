@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	proxy "proxy"
+	"github.com/lapcca/TVPxy/proxy"
 )
 
 func main() {

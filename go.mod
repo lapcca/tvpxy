@@ -2,9 +2,7 @@ module TVPxy
 
 go 1.21
 
-replace (
-	proxy latest => github.com/lapcca/TVPxy/proxy latest
-)
+require github.com/lapcca/TVPxy/proxy v0.0.0-20231104164400-df27c3e9ea29
 
 require (
 	github.com/bytedance/sonic v1.9.1 // indirect
