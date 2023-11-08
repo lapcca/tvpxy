@@ -6,3 +6,8 @@ const (
 	ContentType_MP2T    = "video/MP2T"
 	ContentType_DEFAULT = "application/octet-stream"
 )
+
+type DATA struct {
+	buf []byte
+	len int
+}
