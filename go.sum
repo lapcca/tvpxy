@@ -32,8 +32,8 @@ github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHm
 github.com/klauspost/cpuid/v2 v2.0.9/go.mod h1:FInQzS24/EEf25PyTYn52gqo7WaD8xa0213Md/qVLRg=
 github.com/klauspost/cpuid/v2 v2.2.4 h1:acbojRNwl3o09bUq+yDCtZFc1aiwaAAxtcn8YkZXnvk=
 github.com/klauspost/cpuid/v2 v2.2.4/go.mod h1:RVVoqg1df56z8g3pUjL/3lE5UfnlrJX8tyFgg4nqhuY=
-github.com/lapcca/TVPxy/proxy v0.0.0-20231104164400-df27c3e9ea29 h1:0PJxyOR4z9EkkIy+QnOnGJO8/+Do/rPCGvvmSwhvZNA=
-github.com/lapcca/TVPxy/proxy v0.0.0-20231104164400-df27c3e9ea29/go.mod h1:h5w4tJ3ySaP4Rv6RSVirEHFRo1s7V6WU34ByccWkLYc=
+github.com/lapcca/TVPxy/proxy v0.0.0-20231108020830-48c498f55a89 h1:fM1EErl1kc4tb+nIMh3AR0UEv9+azerGzhayJ+8kqLM=
+github.com/lapcca/TVPxy/proxy v0.0.0-20231108020830-48c498f55a89/go.mod h1:h5w4tJ3ySaP4Rv6RSVirEHFRo1s7V6WU34ByccWkLYc=
 github.com/leodido/go-urn v1.2.4 h1:XlAE/cm/ms7TE/VMVoduSpNBoyc2dOxHs5MZSwAN63Q=
 github.com/leodido/go-urn v1.2.4/go.mod h1:7ZrI8mTSeBSHl/UaRyKQW1qZeMgak41ANeCNaVckg+4=
 github.com/mattn/go-isatty v0.0.19 h1:JITubQf0MOLdlGRuRq+jtsDlekdYPia9ZFsB8h/APPA=
