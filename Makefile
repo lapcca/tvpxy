@@ -11,11 +11,11 @@ BUILD_DIR := build
 OUTPUT_NAME := tvpxy
 
 # Targets
-all: clean dependencies build build-openwrt-amd64 build-openwrt-arm build-openwrt-mips
+all: clean dependencies build
 
 build: mkdir
 	@echo "Building main.go with CGO enabled..."
-	@CGO_ENABLED=0 ${GO} build ${BUILD_FLAGS} -tags netgo -o ${BUILD_DIR}/${OUTPUT_NAME} main.go
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 ${GO} build ${BUILD_FLAGS} -tags netgo -o ${BUILD_DIR}/${OUTPUT_NAME} main.go
 
 build-openwrt-amd64: mkdir
 	@echo "Building main.go for OpenWrt (amd64)..."
