@@ -82,7 +82,56 @@ func (p *Proxy) handle(c *gin.Context) {
 		return
 	}
 
+	channel := make(chan DATA, 450)
+	endChannel := make(chan bool)
+	go receiveRoutine(&channel,endChannel, conn, c)
+	go sendRoutine(&channel,endChannel, c)
+
+	<-endChannel
+
+}
+
+func sendRoutine(channel *chan DATA, endChannel chan bool, c *gin.Context) {
+
+	var err error
+	var data DATA
+
+	rtpPkg := &rtp.Packet{}
+	headerSent := false
+	for {
+		select {
+		case data = <-*channel:
+			num := data.len
+			if err = rtpPkg.Unmarshal(data.buf[:num]); err != nil {
+				c.String(500, err.Error())
+				return
+			}
+
+			if !headerSent {
+				headerSent = true
+				if rtpPkg.PayloadType == RTP_Payload_MP2T {
+					c.Writer.Header().Set("Content-Type", ContentType_MP2T)
+				} else {
+					c.Writer.Header().Set("Content-Type", ContentType_DEFAULT)
+				}
+				c.Writer.WriteHeader(200)
+			}
+
+			if _, wErr := c.Writer.Write(rtpPkg.Payload); wErr != nil {
+				c.String(500, err.Error())
+				endChannel <- true
+				return
+			}
+		case <-endChannel:
+			return
+		}
+
+	}
+}
+
+func receiveRoutine(channel *chan DATA, endChannel chan bool, conn *net.UDPConn, c *gin.Context) {
 	var buf = make([]byte, 1500)
+
 	num, err := conn.Read(buf)
 	if err != nil {
 		c.String(500, err.Error())
@@ -95,34 +144,22 @@ func (p *Proxy) handle(c *gin.Context) {
 		return
 	}
 
-	rtpPkg := &rtp.Packet{}
-	headerSent := false
 	for {
-		if err = rtpPkg.Unmarshal(buf[:num]); err != nil {
-			c.String(500, err.Error())
-			return
-		}
-
-		if !headerSent {
-			headerSent = true
-			if rtpPkg.PayloadType == RTP_Payload_MP2T {
-				c.Writer.Header().Set("Content-Type", ContentType_MP2T)
-			} else {
-				c.Writer.Header().Set("Content-Type", ContentType_DEFAULT)
-			}
-			c.Writer.WriteHeader(200)
-		}
-
-		if _, wErr := c.Writer.Write(rtpPkg.Payload); wErr != nil {
-			break
-		}
-
 		if num, err = conn.Read(buf); err != nil {
 			break
 		}
+
+		*channel <- DATA{
+			buf: buf[:num],
+			len: num,
+		}
+
+		if end := <-endChannel; end {
+			return
 	}
 	if err != nil && err != io.EOF {
 		c.String(500, err.Error())
+		endChannel <- true
 		return
 	}
 }
