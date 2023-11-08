@@ -8,7 +8,7 @@ BUILD_FLAGS = -ldflags "-s -w -extldflags '-static'"
 BUILD_DIR := build
 
 # Output binary name
-OUTPUT_NAME := TVPxy
+OUTPUT_NAME := tvpxy
 
 # Targets
 all: clean dependencies build build-openwrt-amd64 build-openwrt-arm build-openwrt-mips
