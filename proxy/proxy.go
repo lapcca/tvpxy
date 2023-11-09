@@ -82,16 +82,16 @@ func (p *Proxy) handle(c *gin.Context) {
 		return
 	}
 
-	channel := make(chan DATA, 450)
+	channel := make(chan DATA, 700)
 	endChannel := make(chan bool)
-	go receiveRoutine(&channel,endChannel, conn, c)
-	go sendRoutine(&channel,endChannel, c)
+	go receiveRoutine(channel, endChannel, conn, c)
+	go sendRoutine(channel, endChannel, c)
 
 	<-endChannel
 
 }
 
-func sendRoutine(channel *chan DATA, endChannel chan bool, c *gin.Context) {
+func sendRoutine(channel chan DATA, endChannel chan bool, c *gin.Context) {
 
 	var err error
 	var data DATA
@@ -100,7 +100,7 @@ func sendRoutine(channel *chan DATA, endChannel chan bool, c *gin.Context) {
 	headerSent := false
 	for {
 		select {
-		case data = <-*channel:
+		case data = <-channel:
 			num := data.len
 			if err = rtpPkg.Unmarshal(data.buf[:num]); err != nil {
 				c.String(500, err.Error())
@@ -129,7 +129,7 @@ func sendRoutine(channel *chan DATA, endChannel chan bool, c *gin.Context) {
 	}
 }
 
-func receiveRoutine(channel *chan DATA, endChannel chan bool, conn *net.UDPConn, c *gin.Context) {
+func receiveRoutine(channel chan DATA, endChannel chan bool, conn *net.UDPConn, c *gin.Context) {
 	var buf = make([]byte, 1500)
 
 	num, err := conn.Read(buf)
@@ -149,14 +149,17 @@ func receiveRoutine(channel *chan DATA, endChannel chan bool, conn *net.UDPConn,
 			break
 		}
 
-		*channel <- DATA{
+		select {
+		case channel <- DATA{
 			buf: buf[:num],
 			len: num,
-		}
+		}:
 
-		if end := <-endChannel; end {
+		case <-endChannel:
 			return
+		}
 	}
+
 	if err != nil && err != io.EOF {
 		c.String(500, err.Error())
 		endChannel <- true
