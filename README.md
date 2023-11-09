@@ -1,5 +1,5 @@
-# TVPxy
-TVPxy is a light-weight proxy server. It can retrieve the RTP streams and forward it to internal LAN over HTTP.
+# tvpxy
+tvpxy is a light-weight proxy server. It can retrieve the RTP streams and forward it to internal LAN over HTTP.
 
 ## Features
 
@@ -13,7 +13,7 @@ Main features:
 
 The client start up video stream transmission by make HTTP request with `http://Pxy-server/rtp/<remote-rtp-address>`.
 
-Ex. by accessing `http://Pxy-server/rtp/1.2.3.4:666` TVPxy will translate it to `rtp://1.2.3.4:666`.
+Ex. by accessing `http://Pxy-server/rtp/1.2.3.4:666` tvpxy will translate it to `rtp://1.2.3.4:666`.
 
 
 ## Usage
@@ -37,5 +37,5 @@ You can find the compiled binary files in the `build/` directory.
 Then, you can run the server:
 
 ```bash
-./build/TVPxy --net "eth4" --port "5566" --timeout "30s"
+./build/tvpxy --net "eth4" --port "5566" --timeout "30s"
 ```
