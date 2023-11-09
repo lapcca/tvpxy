@@ -1,6 +1,12 @@
+#CI项目名
+name: Release
+
 on: 
   release:
     types: [created]
+
+#CI权限
+permissions: write-all
 
 jobs:
   releases-matrix:
