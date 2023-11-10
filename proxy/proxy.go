@@ -13,6 +13,7 @@ type Proxy struct {
 	inteface *net.Interface
 	timeout  time.Duration
 	engine   *gin.Engine
+	logger   *log.Logger
 }
 
 func NewProxy(netDeviceName string, timeout string) *Proxy {
@@ -26,6 +27,10 @@ func NewProxy(netDeviceName string, timeout string) *Proxy {
 	return p
 }
 
+func (p *Proxy) SetLogger(logger *log.Logger) {
+	p.logger = logger
+}
+
 func (p *Proxy) Run(port string) {
 	p.engine.GET("/rtp/:udp_addr", p.handle)
 
@@ -33,9 +38,10 @@ func (p *Proxy) Run(port string) {
 		port = "5566"
 	}
 	portStr := ":" + port
+	p.logger.Println("starting server on " + portStr)
 	err := p.engine.Run(portStr)
 	if err != nil {
-		log.Fatalf("error starting server: %v", err)
+		p.logger.Fatalf("error starting server: %v", err)
 	}
 }
 
@@ -43,7 +49,7 @@ func (p *Proxy) parseAndSetInterface(netDeviceName string) {
 
 	inf, err := net.InterfaceByName(netDeviceName)
 	if err != nil {
-		log.Fatalf("error parsing interface: %v", err)
+		p.logger.Fatalf("error parsing interface: %v", err)
 	}
 	p.inteface = inf
 }
@@ -51,7 +57,7 @@ func (p *Proxy) parseAndSetInterface(netDeviceName string) {
 func (p *Proxy) setTimeout(timeout string) {
 	timeoutDur, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Fatalf("error parsing duration: %v", err)
+		p.logger.Fatalf("error parsing duration: %v", err)
 	}
 	p.timeout = timeoutDur
 }
@@ -61,40 +67,44 @@ func (p *Proxy) handle(c *gin.Context) {
 	addr, err := net.ResolveUDPAddr("udp4", udpAddr)
 	if err != nil {
 		c.String(500, err.Error())
+		p.logger.Fatalf("%v:error resolving address: %v", c.Param("udp_addr"), udpAddr)
 		return
 	}
 
 	conn, err := net.ListenMulticastUDP("udp4", p.inteface, addr)
 	if err != nil {
 		c.String(500, err.Error())
+		p.logger.Fatalf("%v: error listening: %v", c.Param("udp_addr"), err.Error())
 		return
 	}
 	defer func(conn *net.UDPConn) {
 		err := conn.Close()
 		if err != nil {
-			log.Fatalf("error closing connection: %v", err)
+			p.logger.Fatalf("%v:error closing connection: %v", c.Param("udp_addr"), err)
 		}
 	}(conn)
 
 	err = conn.SetReadDeadline(time.Now().Add(p.timeout))
 	if err != nil {
 		c.String(500, err.Error())
+		p.logger.Fatalf("%v:error setting deadline: %v", c.Param("udp_addr"), err.Error())
 		return
 	}
 
 	channel := make(chan DATA, 700)
 	endChannel := make(chan bool)
-	go receiveRoutine(channel, endChannel, conn, c)
-	go sendRoutine(channel, endChannel, c)
+	go p.receiveRoutine(channel, endChannel, conn, c)
+	go p.sendRoutine(channel, endChannel, c)
 
 	<-endChannel
 
 }
 
-func sendRoutine(channel chan DATA, endChannel chan bool, c *gin.Context) {
+func (p *Proxy) sendRoutine(channel chan DATA, endChannel chan bool, c *gin.Context) {
 
 	var err error
 	var data DATA
+	var wNum int
 
 	rtpPkg := &rtp.Packet{}
 	headerSent := false
@@ -104,6 +114,7 @@ func sendRoutine(channel chan DATA, endChannel chan bool, c *gin.Context) {
 			num := data.len
 			if err = rtpPkg.Unmarshal(data.buf[:num]); err != nil {
 				c.String(500, err.Error())
+				p.logger.Fatalf("%v:error unmarshalling: %v", c.Param("udp_addr"), err.Error())
 				return
 			}
 
@@ -117,11 +128,16 @@ func sendRoutine(channel chan DATA, endChannel chan bool, c *gin.Context) {
 				c.Writer.WriteHeader(200)
 			}
 
-			if _, wErr := c.Writer.Write(rtpPkg.Payload); wErr != nil {
+			if wNum, err = c.Writer.Write(rtpPkg.Payload); wErr != nil {
 				c.String(500, err.Error())
 				endChannel <- true
+				p.logger.Fatalf("%v:error writing: %v", c.Param("udp_addr"), err.Error())
 				return
 			}
+			if wNum != num {
+				p.logger.Printf("Just write %d of %d bytest data", wNum, num)
+			}
+
 		case <-endChannel:
 			return
 		}
@@ -129,25 +145,24 @@ func sendRoutine(channel chan DATA, endChannel chan bool, c *gin.Context) {
 	}
 }
 
-func receiveRoutine(channel chan DATA, endChannel chan bool, conn *net.UDPConn, c *gin.Context) {
+func (p *Proxy) receiveRoutine(channel chan DATA, endChannel chan bool, conn *net.UDPConn, c *gin.Context) {
 	var buf = make([]byte, 1500)
 
 	num, err := conn.Read(buf)
 	if err != nil {
 		c.String(500, err.Error())
+		p.logger.Fatalf("%v:error reading: %v", c.Param("udp_addr"), err.Error())
 		return
 	}
 
 	err = conn.SetReadDeadline(time.Time{})
 	if err != nil {
 		c.String(500, err.Error())
+		p.logger.Fatalf("%v:error setting deadline: %v", c.Param("udp_addr"), err.Error())
 		return
 	}
 
 	for {
-		if num, err = conn.Read(buf); err != nil {
-			break
-		}
 
 		select {
 		case channel <- DATA{
@@ -158,11 +173,17 @@ func receiveRoutine(channel chan DATA, endChannel chan bool, conn *net.UDPConn, 
 		case <-endChannel:
 			return
 		}
+		buf = []byte{}
+
+		if num, err = conn.Read(buf); err != nil {
+			break
+		}
 	}
 
 	if err != nil && err != io.EOF {
 		c.String(500, err.Error())
 		endChannel <- true
+		p.logger.Fatalf("%v:error reading last: %v", c.Param("udp_addr"), err.Error())
 		return
 	}
 }
