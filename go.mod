@@ -2,7 +2,9 @@ module TVPxy
 
 go 1.21
 
-require github.com/lapcca/tvpxy/proxy v0.0.0-20231108020830-48c498f55a89
+require github.com/lapcca/tvpxy/proxy v0.0.0
+
+replace github.com/lapcca/tvpxy/proxy v0.0.0 => ./proxy
 
 require (
 	github.com/bytedance/sonic v1.9.1 // indirect
@@ -22,7 +24,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
-	github.com/pion/rtp v1.8.2 // indirect
+	github.com/pion/rtp v1.8.3 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	golang.org/x/arch v0.3.0 // indirect
