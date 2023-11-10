@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/lapcca/TVPxy/proxy"
+	"github.com/lapcca/tvpxy/proxy"
 	"io"
 	"log"
 	"os"
